@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vargans Mondkalender</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#111317;color:#f2eee6;font-family:Arial,Helvetica,sans-serif;padding:24px}
+.card{max-width:760px;margin:auto;background:#1a1d22;border:1px solid #454a52;border-radius:18px;padding:24px}
+.header{display:flex;gap:20px;align-items:center;margin-bottom:22px}
+.moon{font-size:72px;width:100px;height:100px;display:flex;align-items:center;justify-content:center;background:#0d0f12;border:1px solid #454a52;border-radius:50%}
+h1{margin:0 0 6px;font-size:28px}
+.phase{color:#b9b3a8}
+.info{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.box,.influence{background:#22262c;border:1px solid #3d424a;border-radius:12px;padding:14px}
+.label{font-size:11px;letter-spacing:.12em;color:#aaa49a;text-transform:uppercase;margin-bottom:6px}
+.value{font-size:19px;font-weight:bold}
+.influence{margin-top:12px}
+.bar{height:12px;background:#343941;border-radius:20px;overflow:hidden;margin:10px 0}
+.fill{height:100%;background:#b94b3f;width:18%;transition:.2s}
+.note{color:#d3cdc3;font-style:italic}
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
+button{background:#292e35;color:#f2eee6;border:1px solid #555c66;border-radius:9px;padding:10px 14px;font-weight:bold;cursor:pointer}
+.days{display:grid;grid-template-columns:repeat(10,1fr);gap:6px}
+.day{padding:11px 4px;text-align:center;background:#171a1f;border:1px solid #353a42;border-radius:7px;color:#a6a098}
+.day.hot{border-color:#75443e;color:#ddb0aa}
+.day.now{border:2px solid #f2eee6;color:white;font-weight:bold;background:#30353d}
+.version{text-align:right;margin-top:14px;color:#6f747c;font-size:10px}
+@media(max-width:600px){.info{grid-template-columns:1fr}.days{grid-template-columns:repeat(6,1fr)}}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <div class="moon" id="moon">🌑</div>
+    <div><h1>Vargans Mondkalender</h1><div class="phase" id="phase">Neumond</div></div>
+  </div>
+
+  <div class="info">
+    <div class="box"><div class="label">Mondzyklus</div><div class="value" id="day">Tag 1 / 30</div></div>
+    <div class="box"><div class="label">Bis Vollmond</div><div class="value" id="until">14 Tage</div></div>
+    <div class="box"><div class="label">Baaraels Einfluss</div><div class="value" id="risk">Gering</div></div>
+  </div>
+
+  <div class="influence">
+    <div class="label">Druck der Urbestie</div>
+    <div class="bar"><div class="fill" id="fill"></div></div>
+    <div class="note" id="note">Baarael ist fern und ungewöhnlich still.</div>
+  </div>
+
+  <div class="controls">
+    <button onclick="move(-1)">← Vorheriger Tag</button>
+    <button onclick="move(1)">Nächster Tag →</button>
+    <button onclick="resetDay()">Zurücksetzen</button>
+  </div>
+
+  <div class="days" id="days"></div>
+  <div class="version">Version 2 · ohne Blutmond</div>
+</div>
+
+<script>
+let current=1;
+try{
+  const saved=parseInt(localStorage.getItem("varganMoonDay"),10);
+  if(saved>=1 && saved<=30) current=saved;
+}catch(e){}
+
+function moonPhase(d){
+ if(d===1)return["🌑","Neumond"];
+ if(d<=6)return["🌒","Zunehmende Sichel"];
+ if(d===7)return["🌓","Erstes Viertel"];
+ if(d<=12)return["🌔","Zunehmender Mond"];
+ if(d<=14)return["🌔","Fast Vollmond"];
+ if(d===15)return["🌕","Vollmond"];
+ if(d<=17)return["🌖","Nachhall des Vollmonds"];
+ if(d<=22)return["🌖","Abnehmender Mond"];
+ if(d===23)return["🌗","Letztes Viertel"];
+ return["🌘","Abnehmende Sichel"];
+}
+function influence(d){
+ if(d===15)return[100,"Extrem","Die Grenze zwischen Vargan und Baarael ist hauchdünn."];
+ if(d===14||d===16)return[85,"Hoch","Baarael ist nah. Jeder Trigger wiegt schwerer."];
+ if(d===13||d===17)return[70,"Deutlich erhöht","Die Urbestie wird unruhig und aufdringlich."];
+ if((d>=8&&d<=12)||(d>=18&&d<=22))return[50,"Erhöht","Baaraels Präsenz ist deutlich spürbar."];
+ if(d===7||d===23)return[35,"Leicht erhöht","Die Grenze beginnt sich zu verschieben."];
+ return[18,"Gering","Baarael ist fern und ungewöhnlich still."];
+}
+function render(){
+ const p=moonPhase(current), inf=influence(current);
+ document.getElementById("moon").textContent=p[0];
+ document.getElementById("phase").textContent=p[1];
+ document.getElementById("day").textContent="Tag "+current+" / 30";
+ const n=current<=15?15-current:45-current;
+ document.getElementById("until").textContent=n===0?"Heute":n+" Tag"+(n===1?"":"e");
+ document.getElementById("risk").textContent=inf[1];
+ document.getElementById("fill").style.width=inf[0]+"%";
+ document.getElementById("note").textContent=inf[2];
+ const root=document.getElementById("days");
+ root.innerHTML="";
+ for(let i=1;i<=30;i++){
+   const el=document.createElement("div");
+   el.className="day"+(i>=13&&i<=17?" hot":"")+(i===current?" now":"");
+   el.textContent=i;
+   root.appendChild(el);
+ }
+ try{localStorage.setItem("varganMoonDay",String(current));}catch(e){}
+}
+function move(n){current+=n;if(current<1)current=30;if(current>30)current=1;render()}
+function resetDay(){current=1;render()}
+render();
+</script>
+</body>
+</html>
